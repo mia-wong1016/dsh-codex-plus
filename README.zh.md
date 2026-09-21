@@ -95,6 +95,8 @@ dsh plugin --profile web add dsh-codex-plus
 - token 明文只进 DSH 凭证库；`settings.yaml` 里只有引用名 `OPENAI_CODEX_API_KEY`。
 - 对 `auth.json` 的唯一写入是续期后的三元组，原子替换、权限 0600。
 - 重置操作需要显式确认参数，且必须有可用重置券。
+- 面板路由对**已持有有效 DSH web 会话**的调用方可读（与 web UI 其余部分同一套浏览器会话策略）；
+  它们暴露的是额度、计划类型与账号邮箱，不包含 token。
 - `codex exec` 使用你传给 `codex` 工具的沙箱（默认 `read-only`）。注意：若外层沙箱已禁用
   user namespace，Codex 自带的 workspace-write 沙箱会失败；此时用 `danger-full-access`
   交给 DSH 自己的沙箱约束反而更稳妥。

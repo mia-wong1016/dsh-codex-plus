@@ -109,6 +109,9 @@ provider yourself.
   reference name `OPENAI_CODEX_API_KEY`.
 - `auth.json` is only ever written with the refreshed triple, atomically, at mode `0600`.
 - The reset action requires an explicit confirmation argument and an available credit.
+- The panel routes are readable by any caller that already holds a valid DSH web session
+  (they are behind the same browser-session policy as the rest of the web UI); they expose the
+  quota, the plan type, and the account email, not the token.
 - `codex exec` runs with the sandbox you pass to the `codex` tool (`read-only` by default).
   Note that running Codex inside a sandbox that already blocks user namespaces can make
   Codex's own workspace-write sandbox fail; `danger-full-access` then defers to DSH's own

@@ -1,6 +1,6 @@
 {
   "name": "dsh-codex-plus",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Codex (ChatGPT Plus/Pro) subscription for DeepSeek Harness: quota panel with one-click reset, automatic subscription routing into the model picker, and token upkeep.",
   "type": "module",
   "license": "MIT",
