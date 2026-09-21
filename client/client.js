@@ -45,6 +45,27 @@ const CSS = [
 
 export const inject = ['timer']
 
+/**
+ * Read JSON from this plugin's own same-origin routes. The web server applies its browser
+ * session policy to these paths, so no token or custom channel is involved.
+ * @param {string} path
+ * @param {RequestInit} [init]
+ * @returns {Promise<any>}
+ */
+async function requestJson(path, init) {
+  const response = await fetch(path, { credentials: 'same-origin', ...init })
+  if (!response.ok) {
+    let detail = ''
+    try {
+      detail = JSON.stringify(await response.json()).slice(0, 300)
+    } catch {
+      /* body was not JSON */
+    }
+    throw new Error(`HTTP ${response.status}${detail ? ` ${detail}` : ''}`)
+  }
+  return await response.json()
+}
+
 function fmtRemain(value) {
   if (typeof value !== 'number' || !isFinite(value)) return '—'
   return `${Math.max(0, Math.round(100 - value))}%`
@@ -201,7 +222,7 @@ function createController() {
       error = null
       emit()
       try {
-        status = (await host.call('codex-status', {})) || null
+        status = await requestJson('/codex-plus/status')
       } catch (cause) {
         error = String((cause && cause.message) || cause)
       }
@@ -214,8 +235,7 @@ function createController() {
       resetMessage = ''
       emit()
       try {
-        const response = await host.call('codex-reset', { confirm: true })
-        const result = response && response.result ? response.result : null
+        const result = await requestJson('/codex-plus/reset', { method: 'POST' })
         if (result && result.ok) {
           const outcomes = {
             reset: '已消耗 1 张重置券，5 小时与一周额度已重置',
@@ -226,7 +246,7 @@ function createController() {
           resetMessage = outcomes[result.outcome] || `结果：${String(result.outcome)}`
           if (result.status) status = result.status
         } else {
-          resetMessage = `重置失败：${String((result && result.error) || (response && response.error) || 'unknown')}`
+          resetMessage = `重置失败：${String((result && result.error) || 'unknown')}`
         }
       } catch (cause) {
         resetMessage = `重置失败：${String((cause && cause.message) || cause)}`
@@ -240,7 +260,7 @@ function createController() {
       syncMessage = ''
       emit()
       try {
-        const result = await host.call('codex-sync-models', {})
+        const result = await requestJson('/codex-plus/sync', { method: 'POST' })
         if (result && result.ok) {
           const count = Array.isArray(result.models) ? result.models.length : 0
           syncMessage = `已同步 ${String(result.registeredAs || 'openai-codex')}：${count} 个模型${result.tokenRefreshed ? '（已续期 token）' : ''}`

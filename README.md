@@ -43,6 +43,13 @@ and the rotated `access_token` / `refresh_token` / `id_token` triple is written 
 `auth.json` atomically with mode `0600`. The current access token is stored in DSH's
 credential store under the reference name above, so `settings.yaml` never holds a secret.
 
+**Panel transport**
+
+The browser half talks to the host half over this plugin's own same-origin routes —
+`GET /codex-plus/status`, `POST /codex-plus/sync`, `POST /codex-plus/reset` — which the DSH web
+server already protects with its browser-session policy. No new RPC channel and no token in the
+page are involved.
+
 **Delegation tool**
 
 `codex` hands a self-contained task to the local Codex agent and returns its final answer —

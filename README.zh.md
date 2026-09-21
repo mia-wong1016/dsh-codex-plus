@@ -36,6 +36,12 @@ access token 剩余寿命不足 24 小时时向 `auth.openai.com` 续期，并�
 `access_token` / `refresh_token` / `id_token` **原子写回** `auth.json`（权限 0600）。
 当前 token 存入 DSH 凭证库（引用名见上），因此 `settings.yaml` 里不会出现明文密钥。
 
+**面板通信**
+
+前端半通过本插件自己的同源路由与宿主通信——`GET /codex-plus/status`、`POST /codex-plus/sync`、
+`POST /codex-plus/reset`，这些路径由 DSH web server 自身的浏览器会话策略保护。
+没有额外 RPC 通道，页面里也不携带 token。
+
 **委派工具**
 
 `codex` 把自包含任务交给本机 Codex agent 并返回最终回答——适合做第二意见、独立复核或并行子任务。
