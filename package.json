@@ -1,0 +1,53 @@
+{
+  "name": "dsh-codex-plus",
+  "version": "0.1.0",
+  "description": "Codex (ChatGPT Plus/Pro) subscription for DeepSeek Harness: quota panel with one-click reset, automatic subscription routing into the model picker, and token upkeep.",
+  "type": "module",
+  "license": "MIT",
+  "keywords": [
+    "deepseek",
+    "harness",
+    "dsh",
+    "dsh-plugin",
+    "codex",
+    "chatgpt",
+    "quota",
+    "openai"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mia-wong1016/dsh-codex-plus.git"
+  },
+  "homepage": "https://github.com/mia-wong1016/dsh-codex-plus#readme",
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "lib",
+    "client",
+    "cordis.patch.yml",
+    "README.md",
+    "README.zh.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./client": "./client/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "smoke": "node test/smoke.mjs",
+    "smoke:run": "node test/smoke.mjs --run"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  }
+}
