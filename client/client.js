@@ -1,10 +1,21 @@
 /**
  * Client half — the Codex quota chip in the sidebar footer, its overlay panel, and the
  * one-click reset / model-resync actions that call the host half.
+ *
+ * This file is the SHIPPED bundle, not ESM source: the DSH browser runtime consumes
+ * `window.__ModuleLoader__.load({ id, factory })` with a CommonJS-style factory, so the package
+ * publishes that form directly. Consequences of the factory form: `ctx.slots` is available
+ * directly (the entry declares `inject: ['timer', 'slots']`), and plugin CSS is injected with a
+ * `<style>` element owned by a `ctx.effect` disposer instead of `ctx.styles`.
  * @module dsh-codex-plus/client
  */
 
-import * as React from 'react'
+window.__ModuleLoader__.load({
+  id: 'dsh-codex-plus',
+  factory: (require) => {
+    const module = { exports: {} }
+    const exports = module.exports
+    const React = require('react')
 
 const CSS = [
   '.cdxp-chip{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 9px;border-radius:8px;',
@@ -43,7 +54,7 @@ const CSS = [
   '.cdxp-list{max-height:180px;overflow:auto;margin-top:6px;}',
 ].join('\n')
 
-export const inject = ['timer']
+const inject = ['timer', 'slots']
 
 /**
  * Read JSON from this plugin's own same-origin routes. The web server applies its browser
@@ -276,10 +287,15 @@ function createController() {
   }
 }
 
-export function apply(ctx) {
-  const slots = ctx.get('slots')
-  if (slots === undefined) return
-  if (ctx.styles && typeof ctx.styles.insert === 'function') ctx.effect(() => ctx.styles.insert(CSS))
+function apply(ctx) {
+  const slots = ctx.slots
+  ctx.effect(() => {
+    const style = document.createElement('style')
+    style.dataset.plugin = 'dsh-codex-plus'
+    style.textContent = CSS
+    document.head.append(style)
+    return () => style.remove()
+  })
   const controller = createController()
   const timer = ctx.timer
 
@@ -351,4 +367,7 @@ export function apply(ctx) {
   slots.inject('shell.overlay', () => slots.register({ name: 'shell.overlay', id: 'codex-plus-panel' }, Panel))
 }
 
-export default { name: 'codex-plus', inject, apply }
+Object.assign(exports, { name: 'codex-plus', inject, apply, default: { name: 'codex-plus', inject, apply } })
+return module.exports
+  },
+})

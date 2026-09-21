@@ -2,6 +2,10 @@
 
 Use your **Codex (ChatGPT Plus/Pro) subscription** inside DeepSeek Harness.
 
+> **用途（中文）：** 把你本机已登录的 Codex（ChatGPT Plus/Pro）订阅接进 DSH —— 显示 5 小时/一周
+> 额度与重置券、一键重置额度、把订阅模型接进模型选择器、并自动续期凭证。
+> 中文详解见 [README.zh.md](./README.zh.md)。
+
 It reads the quota of the Codex account you are already signed in to on this machine,
 shows it in the UI, exposes the subscription's models to DSH's model picker, and can spend
 a rate-limit reset credit with one click.

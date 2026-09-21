@@ -1,23 +1,38 @@
 # dsh-codex-plus
 
-在 DeepSeek Harness 里直接使用你的 **Codex（ChatGPT Plus/Pro）订阅**。
+**用途：把你本机已经登录的 Codex（ChatGPT Plus/Pro）订阅接进 DeepSeek Harness。**
 
-读取你本机已登录的 Codex 账号额度并显示在界面上，把该订阅的模型接入 DSH 的模型选择器，
-并支持一键消耗一张重置券重置额度。
+装好之后 DSH 能做三件它原本做不到的事：
 
-## 功能
+1. **看得见订阅额度** —— 侧边栏显示 5 小时窗口、一周窗口的剩余额度与剩余重置券数量，
+   点开有详细面板；
+2. **能用订阅的模型** —— 读取额度时自动把订阅线路注册进 DSH，Codex 模型随即出现在
+   模型选择器里（`gpt-5.6-sol`、`gpt-5.6-terra`、`gpt-5.6-luna`、`gpt-5.5` 等）；
+3. **能一键重置额度** —— 面板上的按钮消耗 1 张重置券，重置 5 小时 + 一周窗口；
+4. **凭证自动续期** —— access token 快过期时自动续期并写回，不用你手动换 key。
 
-**额度面板**
+不需要你提供任何 API key：插件读取的是你自己 Codex 登录已经写在 `~/.codex/auth.json`
+里的凭证。
 
-- 侧边栏底部 `Codex` 胶囊：5 小时窗口剩余、一周窗口剩余、剩余重置券数量
-  （侧边栏收起为窄轨道时自动折叠为百分比）。
-- 点击打开面板：两个窗口的已用百分比与重置时间，以及每张重置券的过期时间。
-- **一键重置**：消耗 1 张重置券，重置 5 小时 + 一周窗口。无券时按钮禁用，结果会分别提示
-  `reset` / `nothingToReset` / `noCredit` / `alreadyRedeemed`。**这会真实消耗一张券且不可撤销。**
+## 功能明细
 
-**模型接入**
+### 额度面板
 
-每次读取额度时，会在 `llm-pi-ai` 配置命名空间里注册订阅路由，模型随即出现在 DSH 模型选择器中：
+- 侧边栏底部一枚 `Codex` 胶囊：`5h` 剩余、`周` 剩余、`重置` 券数量；
+  侧边栏收起成窄轨道时自动折叠为百分比。
+- 点击打开右侧面板：
+  - **5 小时额度** 与 **一周额度**：已用百分比、进度条、重置时间（含「还有多久」）；
+  - **重置次数（重置券）**：剩余张数，以及每张券的标题、说明与过期时间；
+  - **一键重置额度**：消耗 1 张重置券。没有券时按钮禁用；结果会分别提示
+    「已重置」/「当前没有可重置的窗口」/「没有可用重置券」/「该重置已执行过」。
+    **这会真实消耗一张券且不可撤销。**
+  - **DSH 模型提供方** 卡片：是否已接入、当前几个模型、token 到期时间；
+    以及 **同步/续期 Codex 模型** 按钮（立即续期并重写配置，不必等自动节流）。
+  - **刷新** 按钮；面板每 60 秒自动刷新一次。
+
+### 模型接入（读额度时自动完成）
+
+每次读取额度都会确保 `~/.dsh/settings.yaml` 里有这一段：
 
 ```yaml
 llm-pi-ai:
@@ -28,38 +43,47 @@ llm-pi-ai:
       baseURL: https://chatgpt.com/backend-api
 ```
 
-只改动这一个 provider 条目：合并是按行、幂等的，你已有的其他 provider 与文件格式都保留。
+- 只改动 `providers.openai-codex` 这一个条目：合并按行进行、幂等，
+  **你已有的其他 provider（例如 `local`）与文件格式都保持原样**；
+- 已有的 provider 块会被原样保留，不会重复插入；
+- 只要额度面板、想自己接 provider 的，把 `syncProviders` 设为 `false` 即可完全跳过写配置。
 
-**凭证续期**
+### 凭证续期
 
-access token 剩余寿命不足 24 小时时向 `auth.openai.com` 续期，并把轮换后的
-`access_token` / `refresh_token` / `id_token` **原子写回** `auth.json`（权限 0600）。
-当前 token 存入 DSH 凭证库（引用名见上），因此 `settings.yaml` 里不会出现明文密钥。
+- access token 剩余寿命不足 **24 小时**时，用 refresh_token 向 `auth.openai.com` 换新；
+- 轮换后的 `access_token` / `refresh_token` / `id_token` **原子写回** `auth.json`（权限 0600）；
+- 当前 token 存入 DSH 凭证库（引用名 `OPENAI_CODEX_API_KEY`），
+  因此 `settings.yaml` 里**不会出现明文密钥**；
+- 续期失败但旧 token 仍有效时会继续沿用旧 token，并在面板里说明。
 
-**面板通信**
+### 面板通信
 
-前端半通过本插件自己的同源路由与宿主通信——`GET /codex-plus/status`、`POST /codex-plus/sync`、
-`POST /codex-plus/reset`，这些路径由 DSH web server 自身的浏览器会话策略保护。
-没有额外 RPC 通道，页面里也不携带 token。
+前端半通过本插件自己的同源路由与宿主通信：
 
-**委派工具**
+| 路由 | 方法 | 作用 |
+| --- | --- | --- |
+| `/codex-plus/status` | GET | 额度 + 账号 + 提供方同步状态 |
+| `/codex-plus/sync` | POST | 立即续期 token 并重写提供方配置 |
+| `/codex-plus/reset` | POST | 消耗 1 张重置券重置额度 |
 
-`codex` 把自包含任务交给本机 Codex agent 并返回最终回答——适合做第二意见、独立复核或并行子任务。
+这些路径由 DSH web server 自身的浏览器会话策略保护，没有额外 RPC 通道，页面里也不携带 token。
+
+### 模型可见工具
 
 | 工具 | 作用 |
 | --- | --- |
-| `codex` | 通过 `codex exec` 执行任务并返回回答 |
-| `codex_quota` | 读取额度并重新同步 provider 路由 |
-| `codex_models_sync` | 立即续期 token 并重新注册模型 |
+| `codex` | 把自包含任务交给本机 Codex agent（`codex exec`）并返回最终回答 |
+| `codex_quota` | 读取额度，并重新同步提供方路由 |
+| `codex_models_sync` | 立即续期 token、重新注册模型，并回报 DSH 现在服务的模型清单 |
 | `codexprobe` | 诊断：解析到的 CLI、Codex home、缓存的模型目录、额度读取结果 |
 
 ## 要求
 
-- 本机有已用 ChatGPT 账号登录的 Codex CLI（`codex login`），登录态位于 `<codexHome>/auth.json`。
+- 本机有**已用 ChatGPT 账号登录**的 Codex CLI（`codex login`），登录态在 `<codexHome>/auth.json`。
 - CLI 查找顺序：`DSH_CODEX_BIN` → `/usr/lib/chatgpt/resources/codex` → `/usr/local/bin/codex`
   → `/usr/bin/codex` → `~/.codex/bin/codex` → `~/.local/bin/codex`。
 - Codex home：`DSH_CODEX_HOME`，否则 `~/.codex`。
-- Node 20+。不需要 Python，无额外 npm 依赖。
+- **Node 20+**。不需要 Python，无额外 npm 依赖（只用 Node 内置模块）。
 
 ## 安装
 
@@ -67,7 +91,8 @@ access token 剩余寿命不足 24 小时时向 `auth.openai.com` 续期，并�
 dsh plugin --profile web add dsh-codex-plus
 ```
 
-重启该 profile 后刷新页面。把会话模型切到 **Codex (ChatGPT Plus/Pro)** 即可让该会话使用订阅。
+**装完必须重启一次 `dsh web`**（bundle 组成在启动时装载），然后刷新页面。
+把会话模型切到 **Codex (ChatGPT Plus/Pro)** 即可让该会话使用订阅。
 
 ## 配置
 
@@ -87,15 +112,13 @@ dsh plugin --profile web add dsh-codex-plus
     sandboxPolicy: true                   # 设为 false 关闭 workspace-write 策略
 ```
 
-只要额度面板、想自己接 provider 时，把 `syncProviders` 设为 `false`。
-
 ## 安全说明
 
-- **不打包任何凭证，也不记录 token。** 插件读取的是你自己 Codex 登录已经写入 `auth.json` 的凭证。
+- **不打包任何凭证，也不记录 token。** 读取的是你自己 Codex 登录写入的 `auth.json`。
 - token 明文只进 DSH 凭证库；`settings.yaml` 里只有引用名 `OPENAI_CODEX_API_KEY`。
 - 对 `auth.json` 的唯一写入是续期后的三元组，原子替换、权限 0600。
 - 重置操作需要显式确认参数，且必须有可用重置券。
-- 面板路由对**已持有有效 DSH web 会话**的调用方可读（与 web UI 其余部分同一套浏览器会话策略）；
+- 面板路由对**已持有有效 DSH web 会话**的调用方可读（与 web UI 其余部分同一套会话策略）；
   它们暴露的是额度、计划类型与账号邮箱，不包含 token。
 - `codex exec` 使用你传给 `codex` 工具的沙箱（默认 `read-only`）。注意：若外层沙箱已禁用
   user namespace，Codex 自带的 workspace-write 沙箱会失败；此时用 `danger-full-access`
