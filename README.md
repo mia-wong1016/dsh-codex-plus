@@ -1,10 +1,26 @@
 # dsh-codex-plus
 
-Use your **Codex (ChatGPT Plus/Pro) subscription** inside DeepSeek Harness.
+**用途：把你本机已经登录的 Codex（ChatGPT Plus/Pro）订阅接入 DeepSeek Harness。**
+它显示 5 小时窗口与一周窗口的剩余额度、重置时间与剩余重置券数量，支持一键消耗一张重置券重置额度；
+读取额度时自动把订阅线路注册进 DSH，使 Codex 模型出现在模型选择器中；并在 access token 到期前
+自动续期。**无需填写任何 API key**，使用的是你本机 Codex 登录已有的凭证。
 
-> **用途（中文）：** 把你本机已登录的 Codex（ChatGPT Plus/Pro）订阅接进 DSH —— 显示 5 小时/一周
-> 额度与重置券、一键重置额度、把订阅模型接进模型选择器、并自动续期凭证。
-> 中文详解见 [README.zh.md](./README.zh.md)。
+> English: [use your Codex (ChatGPT Plus/Pro) subscription inside DeepSeek Harness](#english)
+
+## 用途
+
+1. **看得见订阅额度** —— 侧边栏 `Codex` 胶囊与面板显示两个窗口的剩余额度与重置券；
+2. **能用订阅的模型** —— 读额度时自动注册 `openai-codex` 路由，模型出现在模型选择器；
+3. **能一键重置额度** —— 面板按钮消耗 1 张重置券，重置 5 小时 + 一周窗口；
+4. **凭证自动续期** —— token 剩余不足 24 小时时自动续期并原子写回。
+
+中文详解（功能明细、面板路由、安装与配置、安全边界）见 [README.zh.md](./README.zh.md)。
+
+---
+
+## English
+
+Use your **Codex (ChatGPT Plus/Pro) subscription** inside DeepSeek Harness.
 
 It reads the quota of the Codex account you are already signed in to on this machine,
 shows it in the UI, exposes the subscription's models to DSH's model picker, and can spend

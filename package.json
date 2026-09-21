@@ -1,6 +1,6 @@
 {
   "name": "dsh-codex-plus",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Codex（ChatGPT Plus/Pro）订阅接入 DSH：侧边栏展示 5 小时与一周窗口额度、重置时间与重置券数量并支持一键重置，读取额度时自动把订阅模型接进模型选择器，access token 到期前自动续期。Codex (ChatGPT Plus/Pro) subscription for DSH: quota panel with one-click reset, automatic subscription routing, and token upkeep.",
   "type": "module",
   "license": "MIT",
