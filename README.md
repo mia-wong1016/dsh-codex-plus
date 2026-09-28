@@ -5,6 +5,10 @@
 读取额度时自动把订阅线路注册进 DSH，使 Codex 模型出现在模型选择器中；并在 access token 到期前
 自动续期。**无需填写任何 API key**，使用的是你本机 Codex 登录已有的凭证。
 
+> **平台支持说明：当前版本仅支持 Linux。Windows 版本尚未适配，需要额外适配后方可使用。**
+>
+> 中文更新记录：[CHANGELOG.zh.md](./CHANGELOG.zh.md)
+
 > English: [use your Codex (ChatGPT Plus/Pro) subscription inside DeepSeek Harness](#english)
 
 ## 用途
@@ -83,6 +87,7 @@ useful for a second opinion, a fresh-context review, or an independent subtask.
 
 ## Requirements
 
+- **Linux only. Windows is not supported yet and requires additional adaptation.**
 - A Codex CLI on this machine that is already signed in with a ChatGPT account
   (`codex login`); its login lives in `<codexHome>/auth.json`.
 - The CLI is looked up in `DSH_CODEX_BIN`, then `/usr/lib/chatgpt/resources/codex`,

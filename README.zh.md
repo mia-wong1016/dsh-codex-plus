@@ -14,6 +14,10 @@
 不需要你提供任何 API key：插件读取的是你自己 Codex 登录已经写在 `~/.codex/auth.json`
 里的凭证。
 
+> **平台支持说明：当前版本仅支持 Linux。Windows 版本尚未适配，需针对 CLI 路径、凭证目录及进程调用方式进行额外适配后方可使用。**
+
+中文版本更新记录见 [CHANGELOG.zh.md](./CHANGELOG.zh.md)。
+
 ## 功能明细
 
 ### 额度面板
@@ -79,6 +83,7 @@ llm-pi-ai:
 
 ## 要求
 
+- **操作系统：仅支持 Linux。Windows 暂不支持，需要额外适配。**
 - 本机有**已用 ChatGPT 账号登录**的 Codex CLI（`codex login`），登录态在 `<codexHome>/auth.json`。
 - CLI 查找顺序：`DSH_CODEX_BIN` → `/usr/lib/chatgpt/resources/codex` → `/usr/local/bin/codex`
   → `/usr/bin/codex` → `~/.codex/bin/codex` → `~/.local/bin/codex`。
