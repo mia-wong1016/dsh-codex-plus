@@ -1,7 +1,7 @@
 # dsh-codex-plus
 
 **用途：把你本机已经登录的 Codex（ChatGPT Plus/Pro）订阅接入 DeepSeek Harness。**
-它显示 5 小时窗口与一周窗口的剩余额度、重置时间与剩余重置券数量，支持一键消耗一张重置券重置额度；
+它显示 5 小时窗口与一周窗口的剩余额度、重置时间与剩余重置券数量，支持选择并消耗指定重置券来重置额度；
 读取额度时自动把订阅线路注册进 DSH，使 Codex 模型出现在模型选择器中；并在 access token 到期前
 自动续期。**无需填写任何 API key**，使用的是你本机 Codex 登录已有的凭证。
 
@@ -11,7 +11,7 @@
 
 1. **看得见订阅额度** —— 侧边栏 `Codex` 胶囊与面板显示两个窗口的剩余额度与重置券；
 2. **能用订阅的模型** —— 读额度时自动注册 `openai-codex` 路由，模型出现在模型选择器；
-3. **能一键重置额度** —— 面板按钮消耗 1 张重置券，重置 5 小时 + 一周窗口；
+3. **能指定重置券** —— 面板逐张列出可用券并单选，按钮只消耗所选券，重置 5 小时 + 一周窗口；
 4. **凭证自动续期** —— token 剩余不足 24 小时时自动续期并原子写回。
 
 中文详解（功能明细、面板路由、安装与配置、安全边界）见 [README.zh.md](./README.zh.md)。
@@ -24,7 +24,7 @@ Use your **Codex (ChatGPT Plus/Pro) subscription** inside DeepSeek Harness.
 
 It reads the quota of the Codex account you are already signed in to on this machine,
 shows it in the UI, exposes the subscription's models to DSH's model picker, and can spend
-a rate-limit reset credit with one click.
+a specifically selected rate-limit reset credit.
 
 ## What it does
 
@@ -34,7 +34,7 @@ a rate-limit reset credit with one click.
   and how many reset credits are left (collapses to the percentage when the sidebar is in rail mode).
 - Click it for a panel with both windows (used %, reset time) and every reset credit with its
   expiry date.
-- **One-click reset** spends one reset credit and resets the 5-hour + weekly windows.
+- **Selected-credit reset** spends the reset credit selected with the radio control and resets the 5-hour + weekly windows.
   The button is disabled when no credit is available, and the outcome is reported
   (`reset` / `nothingToReset` / `noCredit` / `alreadyRedeemed`). This consumes a real credit
   and cannot be undone.
@@ -53,8 +53,7 @@ llm-pi-ai:
       baseURL: https://chatgpt.com/backend-api
 ```
 
-Only that one provider entry is touched — the merge is line-based and idempotent, so your
-other providers and the file's formatting are preserved.
+Only that provider entry is replaced through `settingsController.mutate()`. No fixed settings-file path is assumed, and every other provider remains untouched. The profile declares the complete eight-model catalog, including `gpt-6-luna` and `gpt-6-sol`.
 
 **Token upkeep**
 
@@ -66,7 +65,7 @@ credential store under the reference name above, so `settings.yaml` never holds 
 **Panel transport**
 
 The browser half talks to the host half over this plugin's own same-origin routes —
-`GET /codex-plus/status`, `POST /codex-plus/sync`, `POST /codex-plus/reset` — which the DSH web
+`GET /codex-plus/status`, `POST /codex-plus/sync`, `POST /codex-plus/reset` (JSON body: `{ "creditId": "…" }`) — which the DSH web
 server already protects with its browser-session policy. No new RPC channel and no token in the
 page are involved.
 

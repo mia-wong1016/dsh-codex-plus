@@ -85,8 +85,10 @@ async function main() {
       if (!run.ok) process.exitCode = 1
     }
 
-    if (process.argv.includes('--reset')) {
-      const reset = await consumeResetCredit(server)
+    const resetArg = process.argv.find((arg) => arg.startsWith('--reset='))
+    if (resetArg) {
+      const creditId = resetArg.slice('--reset='.length)
+      const reset = await consumeResetCredit(server, { creditId })
       stamp('consumeResetCredit', { ok: reset.ok, outcome: reset.outcome, error: reset.error })
       if (!reset.ok) process.exitCode = 1
     }

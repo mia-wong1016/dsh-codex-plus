@@ -49,7 +49,11 @@ const CSS = [
   '.cdxp-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}',
   '.cdxp-err{color:var(--dsw-alias-state-error-primary);font-size:11px;margin-top:6px;word-break:break-word;}',
   '.cdxp-ok{color:var(--dsw-alias-state-success-primary);font-size:11px;margin-top:6px;}',
-  '.cdxp-credit{border-left:2px solid var(--dsw-alias-brand-primary);padding:4px 0 4px 8px;margin-top:8px;}',
+  '.cdxp-credit{display:flex;align-items:flex-start;gap:8px;border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px;margin-top:8px;cursor:pointer;}',
+  '.cdxp-credit.selected{border-color:var(--dsw-alias-brand-primary);background:var(--dsw-alias-bg-layer-2);}',
+  '.cdxp-credit.disabled{opacity:.55;cursor:not-allowed;}',
+  '.cdxp-credit input{margin-top:2px;accent-color:var(--dsw-alias-brand-primary);}',
+  '.cdxp-credit-body{min-width:0;flex:1;}',
   '.cdxp-empty{color:var(--dsw-alias-label-secondary);font-size:11px;}',
   '.cdxp-list{max-height:180px;overflow:auto;margin-top:6px;}',
 ].join('\n')
@@ -154,10 +158,24 @@ function StatusBody(props) {
   if (credits && Array.isArray(credits.credits)) {
     for (let index = 0; index < credits.credits.length; index += 1) {
       const credit = credits.credits[index] || {}
-      creditRows.push(React.createElement('div', { className: 'cdxp-credit', key: String(credit.id || index) },
-        React.createElement('div', { className: 'cdxp-title' }, String(credit.title || 'Full reset')),
-        React.createElement('div', { className: 'cdxp-meta' },
-          `过期 ${fmtWhen(credit.expiresAt)}${credit.description ? ` · ${String(credit.description)}` : ''}`)))
+      const available = !credit.status || credit.status === 'available'
+      const selected = available && String(credit.id) === props.selectedCreditId
+      creditRows.push(React.createElement('label', {
+        className: `cdxp-credit${selected ? ' selected' : ''}${available ? '' : ' disabled'}`,
+        key: String(credit.id || index),
+      },
+        React.createElement('input', {
+          type: 'radio',
+          name: 'codex-reset-credit',
+          value: String(credit.id || ''),
+          checked: selected,
+          disabled: !available || props.busy,
+          onChange: () => props.onSelectCredit(String(credit.id || '')),
+        }),
+        React.createElement('div', { className: 'cdxp-credit-body' },
+          React.createElement('div', { className: 'cdxp-title' }, String(credit.title || 'Full reset')),
+          React.createElement('div', { className: 'cdxp-meta' },
+            `${credit.status ? `状态 ${String(credit.status)} · ` : ''}过期 ${fmtWhen(credit.expiresAt)}${credit.description ? ` · ${String(credit.description)}` : ''}`))))
     }
   }
   children.push(React.createElement('div', { className: 'cdxp-card', key: 'credits' },
@@ -173,9 +191,9 @@ function StatusBody(props) {
     React.createElement('div', { className: 'cdxp-actions' },
       React.createElement('button', {
         className: 'cdxp-btn primary',
-        disabled: props.busy || !(credits && credits.availableCount > 0),
+        disabled: props.busy || !(credits && credits.availableCount > 0) || !props.selectedCreditId,
         onClick: props.onReset,
-      }, props.busy ? '处理中…' : '一键重置额度'),
+      }, props.busy ? '处理中…' : '使用所选重置券'),
       React.createElement('button', { className: 'cdxp-btn', disabled: props.busy, onClick: props.onRefresh }, '刷新'))))
   const provider = status.provider || null
   const modelNames = provider && Array.isArray(provider.models) ? provider.models.slice(0, 8).join(', ') : ''
@@ -205,7 +223,18 @@ function createController() {
   let open = false
   let resetMessage = ''
   let syncMessage = ''
+  let selectedCreditId = ''
   const listeners = new Set()
+  const availableCredits = (nextStatus) => {
+    const rows = nextStatus && nextStatus.resetCredits && Array.isArray(nextStatus.resetCredits.credits)
+      ? nextStatus.resetCredits.credits
+      : []
+    return rows.filter((credit) => credit && credit.id && (!credit.status || credit.status === 'available'))
+  }
+  const reconcileCredit = () => {
+    const rows = availableCredits(status)
+    if (!rows.some((credit) => String(credit.id) === selectedCreditId)) selectedCreditId = rows[0] ? String(rows[0].id) : ''
+  }
   const emit = () => {
     for (const listener of listeners) {
       try {
@@ -221,7 +250,11 @@ function createController() {
       return () => listeners.delete(listener)
     },
     get() {
-      return { status, error, busy, open, resetMessage, syncMessage }
+      return { status, error, busy, open, resetMessage, syncMessage, selectedCreditId }
+    },
+    selectCredit(id) {
+      if (availableCredits(status).some((credit) => String(credit.id) === id)) selectedCreditId = id
+      emit()
     },
     setOpen(next) {
       open = next
@@ -234,6 +267,7 @@ function createController() {
       emit()
       try {
         status = await requestJson('/codex-plus/status')
+        reconcileCredit()
       } catch (cause) {
         error = String((cause && cause.message) || cause)
       }
@@ -242,11 +276,21 @@ function createController() {
     },
     async reset() {
       if (busy) return
+      const creditId = selectedCreditId
+      if (!availableCredits(status).some((credit) => String(credit.id) === creditId)) {
+        resetMessage = '请先选择一张可用的重置券'
+        emit()
+        return
+      }
       busy = true
       resetMessage = ''
       emit()
       try {
-        const result = await requestJson('/codex-plus/reset', { method: 'POST' })
+        const result = await requestJson('/codex-plus/reset', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ creditId }),
+        })
         if (result && result.ok) {
           const outcomes = {
             reset: '已消耗 1 张重置券，5 小时与一周额度已重置',
@@ -255,7 +299,10 @@ function createController() {
             alreadyRedeemed: '该重置已执行过（幂等命中）',
           }
           resetMessage = outcomes[result.outcome] || `结果：${String(result.outcome)}`
-          if (result.status) status = result.status
+          if (result.status) {
+            status = result.status
+            reconcileCredit()
+          }
         } else {
           resetMessage = `重置失败：${String((result && result.error) || 'unknown')}`
         }
@@ -350,13 +397,15 @@ function apply(ctx) {
         React.createElement('h3', null, 'Codex Plus 订阅'),
         React.createElement('button', { className: 'cdxp-btn', onClick: () => controller.setOpen(false) }, '关闭')),
       React.createElement('div', { className: 'cdxp-sub' },
-        '额度 · 重置券 · DSH 模型提供方（一键重置会消耗 1 张券，不可撤销）'),
+        '额度 · 重置券 · DSH 模型提供方（使用所选重置券不可撤销）'),
       React.createElement(StatusBody, {
         status: state.status,
         error: state.error,
         busy: state.busy,
         resetMessage: state.resetMessage,
         syncMessage: state.syncMessage,
+        selectedCreditId: state.selectedCreditId,
+        onSelectCredit: (id) => controller.selectCredit(id),
         onReset: () => controller.reset(),
         onRefresh: () => controller.refresh(),
         onSyncModels: () => controller.syncModels(),
