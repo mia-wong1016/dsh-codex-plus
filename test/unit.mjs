@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict'
-import { consumeResetCredit } from '../lib/bridge.js'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { consumeResetCredit, resolveCli } from '../lib/bridge.js'
 
 {
   let called = false
@@ -38,6 +41,25 @@ import { consumeResetCredit } from '../lib/bridge.js'
     params: { idempotencyKey: 'idem-1', creditId: 'credit-two' },
     timeout: 60000,
   })
+}
+
+{
+  const directory = await mkdtemp(join(tmpdir(), 'dsh-codex-plus-'))
+  const executable = join(directory, process.platform === 'win32' ? 'codex.EXE' : 'codex')
+  const previousPath = process.env.PATH
+  const previousBin = process.env.DSH_CODEX_BIN
+  await writeFile(executable, '')
+  try {
+    delete process.env.DSH_CODEX_BIN
+    process.env.PATH = directory
+    assert.equal(resolveCli(), executable)
+  } finally {
+    if (previousPath === undefined) delete process.env.PATH
+    else process.env.PATH = previousPath
+    if (previousBin === undefined) delete process.env.DSH_CODEX_BIN
+    else process.env.DSH_CODEX_BIN = previousBin
+    await rm(directory, { recursive: true, force: true })
+  }
 }
 
 console.log('unit tests passed')
