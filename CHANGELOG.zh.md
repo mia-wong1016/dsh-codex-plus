@@ -2,6 +2,15 @@
 
 本文件记录 `dsh-codex-plus` 的版本更新内容。
 
+## 未发布
+
+### 平台支持
+
+- 新增 Windows 支持：从 PATH、OpenAI Codex 官方安装目录与 npm 命令垫片定位 CLI。
+- Windows 上支持直接启动 `codex.exe`，并通过 shell 兼容 `.cmd` / `.bat` 垫片。
+- Windows 写回 `auth.json` 时保留用户目录 ACL，不再调用仅适用于 POSIX 权限位的 `chmod(0600)`。
+- 将 `@deepseek-ai/dsh-tools` peer 范围扩展至已验证兼容的 0.2.x 版本线。
+
 ## 0.1.6（2026-09-28）
 
 ### 变更

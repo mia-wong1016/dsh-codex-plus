@@ -14,7 +14,7 @@
 不需要你提供任何 API key：插件读取的是你自己 Codex 登录已经写在 `~/.codex/auth.json`
 里的凭证。
 
-> **平台支持说明：当前版本仅支持 Linux。Windows 版本尚未适配，需针对 CLI 路径、凭证目录及进程调用方式进行额外适配后方可使用。**
+> **平台支持：Linux 与 Windows。** Windows 会从 PATH、OpenAI Codex 官方安装目录和 npm 命令垫片中定位 CLI。
 
 中文版本更新记录见 [CHANGELOG.zh.md](./CHANGELOG.zh.md)。
 
@@ -55,7 +55,7 @@ llm-pi-ai:
 ### 凭证续期
 
 - access token 剩余寿命不足 **24 小时**时，用 refresh_token 向 `auth.openai.com` 换新；
-- 轮换后的 `access_token` / `refresh_token` / `id_token` **原子写回** `auth.json`（权限 0600）；
+- 轮换后的 `access_token` / `refresh_token` / `id_token` **原子写回** `auth.json`；POSIX 系统额外设置权限 0600，Windows 保留用户目录 ACL；
 - 当前 token 存入 DSH 凭证库（引用名 `OPENAI_CODEX_API_KEY`），
   因此 `settings.yaml` 里**不会出现明文密钥**；
 - 续期失败但旧 token 仍有效时会继续沿用旧 token，并在面板里说明。
@@ -83,11 +83,12 @@ llm-pi-ai:
 
 ## 要求
 
-- **操作系统：仅支持 Linux。Windows 暂不支持，需要额外适配。**
+- **操作系统：支持 Linux 与 Windows。**
 - 本机有**已用 ChatGPT 账号登录**的 Codex CLI（`codex login`），登录态在 `<codexHome>/auth.json`。
-- CLI 查找顺序：`DSH_CODEX_BIN` → `/usr/lib/chatgpt/resources/codex` → `/usr/local/bin/codex`
-  → `/usr/bin/codex` → `~/.codex/bin/codex` → `~/.local/bin/codex`。
-- Codex home：`DSH_CODEX_HOME`，否则 `~/.codex`。
+- CLI 查找顺序：`DSH_CODEX_BIN` → 既有 Linux 路径 → PATH → Windows 兜底位置
+  `%LOCALAPPDATA%\OpenAI\Codex\bin\<hash>\codex.exe` 与 `%APPDATA%\npm\codex.cmd|exe`；
+  Windows 上优先使用真实 `.exe`，再考虑命令垫片。
+- Codex home：`DSH_CODEX_HOME`，否则两个平台都使用 `~/.codex`。
 - **Node 20+**。不需要 Python，无额外 npm 依赖（只用 Node 内置模块）。
 
 ## 安装

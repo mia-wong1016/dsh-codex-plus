@@ -5,7 +5,7 @@
 读取额度时自动把订阅线路注册进 DSH，使 Codex 模型出现在模型选择器中；并在 access token 到期前
 自动续期。**无需填写任何 API key**，使用的是你本机 Codex 登录已有的凭证。
 
-> **平台支持说明：当前版本仅支持 Linux。Windows 版本尚未适配，需要额外适配后方可使用。**
+> **平台支持：Linux 与 Windows。** Windows 会从 PATH、OpenAI Codex 官方安装目录和 npm 命令垫片中定位 CLI。
 >
 > 中文更新记录：[CHANGELOG.zh.md](./CHANGELOG.zh.md)
 
@@ -63,7 +63,7 @@ Only that provider entry is replaced through `settingsController.mutate()`. No f
 
 The access token is refreshed against `auth.openai.com` when it has less than 24 hours left,
 and the rotated `access_token` / `refresh_token` / `id_token` triple is written back to
-`auth.json` atomically with mode `0600`. The current access token is stored in DSH's
+`auth.json` atomically; POSIX systems additionally enforce mode `0600`, while Windows keeps the profile ACL. The current access token is stored in DSH's
 credential store under the reference name above, so `settings.yaml` never holds a secret.
 
 **Panel transport**
@@ -87,12 +87,13 @@ useful for a second opinion, a fresh-context review, or an independent subtask.
 
 ## Requirements
 
-- **Linux only. Windows is not supported yet and requires additional adaptation.**
+- **Linux and Windows are supported.**
 - A Codex CLI on this machine that is already signed in with a ChatGPT account
   (`codex login`); its login lives in `<codexHome>/auth.json`.
-- The CLI is looked up in `DSH_CODEX_BIN`, then `/usr/lib/chatgpt/resources/codex`,
-  `/usr/local/bin/codex`, `/usr/bin/codex`, `~/.codex/bin/codex`, `~/.local/bin/codex`.
-- The Codex home is `DSH_CODEX_HOME`, else `~/.codex`.
+- The CLI lookup order is `DSH_CODEX_BIN`, the established Linux locations, PATH,
+  then Windows fallbacks under `%LOCALAPPDATA%\OpenAI\Codex\bin\<hash>\codex.exe`
+  and `%APPDATA%\npm\codex.cmd|exe`. A real `.exe` is preferred over command shims.
+- The Codex home is `DSH_CODEX_HOME`, else `~/.codex` on both platforms.
 - Node 20 or newer. No Python, no extra npm dependency.
 
 ## Install
